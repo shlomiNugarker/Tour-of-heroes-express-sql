@@ -6,6 +6,7 @@ export default {
   getHeroes,
   updateHero,
   addHero,
+  removeHero,
 }
 
 async function getHeroes(req: Request, res: Response) {
@@ -42,6 +43,15 @@ async function addHero(req: Request, res: Response) {
 
     const addedHero = await heroesService.add(hero)
     res.json(addedHero)
+  } catch (err) {
+    res.status(500).send({ err: 'Failed to add hero' })
+  }
+}
+
+async function removeHero(req: Request, res: Response) {
+  try {
+    const removedId = await heroesService.remove(req.params.id)
+    res.send(removedId)
   } catch (err) {
     res.status(500).send({ err: 'Failed to add hero' })
   }
