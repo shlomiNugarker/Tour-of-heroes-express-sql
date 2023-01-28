@@ -1,36 +1,31 @@
-import { Connection, MysqlError, Pool } from 'mysql'
+import mysql from 'mysql'
 
-var mysql = require('mysql')
+export default {
+  runSQL,
+}
 
-var pool: Pool = mysql.createPool({
-  host: '',
+const connection = mysql.createConnection({
+  host: 'localhost',
   port: 3306,
-  user: '',
+  user: 'root',
   password: '',
-  database: '',
+  database: 'heroes_db',
   insecureAuth: true,
 })
 
-pool.on('connection', function (connection: Connection) {
-  console.log('DB Connection established')
-
-  connection.on('error', function (err: MysqlError) {
-    console.error(new Date(), 'MySQL error', err.code)
-  })
-  connection.on('close', function (err: MysqlError) {
-    console.error(new Date(), 'MySQL close', err)
-  })
+connection.connect((err: unknown) => {
+  if (err) throw new Error('mySql failed connection')
+  console.log('connected to SQL server')
 })
 
-function runSQL(sqlCommand: any) {
+function runSQL(sqlCommand: any): Promise<any> {
   return new Promise((resolve, reject) => {
-    pool.query(sqlCommand, function (error: unknown, results: any) {
-      if (error) reject(error)
-      else resolve(results)
-    })
+    connection.query(
+      sqlCommand,
+      function (error: unknown, results: any, fields: any) {
+        if (error) reject(error)
+        else resolve(results)
+      }
+    )
   })
-}
-
-module.exports = {
-  runSQL,
 }
