@@ -1,5 +1,6 @@
-import { HEROES } from '../../mock-heroes'
 import { Hero } from '../../interfaces/hero'
+
+import DBService from '../../services/dbService'
 
 export default {
   getById,
@@ -9,18 +10,16 @@ export default {
   remove,
 }
 
-let gHeroes = HEROES
-
-// const COLLECTION_NAME = 'heroes'
-
-async function query() {
+async function query(
+  criteria: {
+    name: string
+  } = { name: '' }
+) {
   try {
-    // const collection = await dbService.getCollection(COLLECTION_NAME)
-    // const heroes = await collection.find({}).toArray()
+    // var namePart = criteria.name || ''
+    const query = `SELECT * FROM hero`
 
-    if (!gHeroes || !gHeroes.length) gHeroes = HEROES
-
-    return gHeroes
+    return DBService.runSQL(query)
   } catch (err) {
     throw err
   }
@@ -28,10 +27,9 @@ async function query() {
 
 async function getById(heroId: string) {
   try {
-    // const collection = await dbService.getCollection(COLLECTION_NAME)
-    // const hero = await collection.findOne({ id: ObjectId(heroId) })
-    // return hero
-    return gHeroes.find((hero) => hero.id === heroId)
+    const query = `SELECT * FROM hero WHERE hero.id = ${heroId}`
+    const heroes: Hero[] = await DBService.runSQL(query)
+    if (heroes.length === 1) return heroes[0]
   } catch (err) {
     throw err
   }
@@ -39,18 +37,12 @@ async function getById(heroId: string) {
 
 async function update(heroToUpdate: Hero) {
   try {
-    // const id = new ObjectId(codeBlock._id)
-    // delete hero._id
-    // const collection = await dbService.getCollection(COLLECTION_NAME)
-    // await collection.updateOne({ _id: id }, { $set: { ...hero } })
-    // const savedHero = { ...hero, _id: id }
-    // return savedHero
+    const query = `UPDATE hero SET name = "${heroToUpdate.name}"
+    WHERE hero.id = ${heroToUpdate.id}`
 
-    const updatedHeroes = gHeroes.map((hero) =>
-      hero.id === heroToUpdate.id ? heroToUpdate : hero
-    )
-    gHeroes = updatedHeroes
-    return heroToUpdate
+    const okPacket = await DBService.runSQL(query)
+    if (okPacket.affectedRows !== 0) return heroToUpdate
+    throw new Error(`No hero updated - heroId ${heroToUpdate.id}`)
   } catch (err) {
     throw err
   }
@@ -58,13 +50,16 @@ async function update(heroToUpdate: Hero) {
 
 async function add(hero: Hero) {
   try {
-    // const heroToAdd = { ...hero }
-    // const collection = await dbService.getCollection(COLLECTION_NAME)
-    // await collection.insertOne(heroToAdd)
-    // return heroToAdd
+    const sqlCmd = `INSERT INTO hero (name) 
+    VALUES ("${hero.name}")`
 
-    gHeroes.push(hero)
-    return hero
+    const okPacket = await DBService.runSQL(sqlCmd)
+
+    const lastInserted = await DBService.runSQL(
+      `SELECT * from hero where hero.id = ${okPacket.insertId}`
+    )
+    console.log(lastInserted[0])
+    return lastInserted[0]
   } catch (err) {
     throw err
   }
@@ -72,12 +67,13 @@ async function add(hero: Hero) {
 
 async function remove(heroId: string) {
   try {
-    // const collection = await dbService.getCollection(COLLECTION_NAME)
-    // await collection.deleteOne({ _id: ObjectId(heroId) })
+    const query = `DELETE FROM hero WHERE hero.id = ${heroId}`
 
-    const updatedHeroes = gHeroes.filter((hero) => hero.id !== heroId)
-    gHeroes = updatedHeroes
-    return heroId
+    return DBService.runSQL(query).then((okPacket) =>
+      okPacket.affectedRows === 1
+        ? okPacket
+        : Promise.reject(new Error(`No hero deleted - hero id ${heroId}`))
+    )
   } catch (err) {
     throw err
   }

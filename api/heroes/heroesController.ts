@@ -29,7 +29,6 @@ async function getHero(req: Request, res: Response) {
 async function updateHero(req: Request, res: Response) {
   try {
     const hero = req.body
-    console.log(req.body)
     const updatedHero = await heroesService.update(hero)
     res.json(updatedHero)
   } catch (err) {
